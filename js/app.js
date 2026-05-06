@@ -1,4 +1,4 @@
-// Invoice Analyzer - Main Application Logic
+// Invoice Analyzer - Main Application Logic v2.0.0
 
 class InvoiceAnalyzer {
     constructor() {
@@ -8,13 +8,27 @@ class InvoiceAnalyzer {
         this.itemsPerPage = 10;
         this.monthlyChart = null;
         this.categoryChart = null;
+        this.invoiceMap = new Map(); // 用於去重
 
         this.init();
     }
 
     init() {
+        this.loadFromLocalStorage();
         this.setupEventListeners();
         this.setupDragAndDrop();
+        this.checkFirstVisit();
+    }
+
+    checkFirstVisit() {
+        const hasVisited = localStorage.getItem('invoiceAnalyzer_visited');
+        if (!hasVisited) {
+            // 首次訪問，顯示幫助 Modal
+            setTimeout(() => {
+                this.showHelpModal();
+            }, 500);
+            localStorage.setItem('invoiceAnalyzer_visited', 'true');
+        }
     }
 
     setupEventListeners() {
@@ -33,6 +47,25 @@ class InvoiceAnalyzer {
         // Export button
         const exportBtn = document.getElementById('exportBtn');
         exportBtn.addEventListener('click', () => this.exportToCSV());
+
+        // Clear data button
+        const clearDataBtn = document.getElementById('clearDataBtn');
+        clearDataBtn.addEventListener('click', () => this.clearAllData());
+
+        // Help button
+        const helpBtn = document.getElementById('helpBtn');
+        helpBtn.addEventListener('click', () => this.showHelpModal());
+
+        // Modal close buttons
+        document.getElementById('closeModalBtn').addEventListener('click', () => this.hideHelpModal());
+        document.getElementById('closeModalBtnBottom').addEventListener('click', () => this.hideHelpModal());
+
+        // Close modal on backdrop click
+        document.getElementById('helpModal').addEventListener('click', (e) => {
+            if (e.target.id === 'helpModal') {
+                this.hideHelpModal();
+            }
+        });
 
         // Pagination buttons
         document.getElementById('prevBtn').addEventListener('click', () => this.prevPage());
@@ -64,66 +97,116 @@ class InvoiceAnalyzer {
         dropZone.addEventListener('drop', (e) => {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                this.processFile(files[0]);
+                this.processMultipleFiles(files);
             }
         });
     }
 
     handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
-            this.processFile(file);
+        const files = event.target.files;
+        if (files.length > 0) {
+            this.processMultipleFiles(files);
         }
     }
 
-    processFile(file) {
-        if (!file.name.endsWith('.csv')) {
-            alert('請上傳 CSV 檔案');
-            return;
+    async processMultipleFiles(files) {
+        const totalFiles = files.length;
+        let processedCount = 0;
+        let newInvoices = [];
+        let duplicateCount = 0;
+
+        // 顯示進度條
+        this.showUploadProgress();
+
+        // 處理每個檔案
+        for (let i = 0; i < totalFiles; i++) {
+            const file = files[i];
+            if (!file.name.endsWith('.csv')) {
+                console.warn(`跳過非 CSV 檔案: ${file.name}`);
+                continue;
+            }
+
+            try {
+                const fileInvoices = await this.parseCSVFile(file);
+                
+                // 去重處理
+                fileInvoices.forEach(invoice => {
+                    if (!this.invoiceMap.has(invoice.invoiceNumber)) {
+                        this.invoiceMap.set(invoice.invoiceNumber, invoice);
+                        newInvoices.push(invoice);
+                    } else {
+                        duplicateCount++;
+                    }
+                });
+
+                processedCount++;
+                this.updateProgress((processedCount / totalFiles) * 100);
+
+            } catch (error) {
+                console.error(`處理檔案 ${file.name} 時發生錯誤:`, error);
+            }
         }
 
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            encoding: 'UTF-8',
-            complete: (results) => {
-                this.parseInvoices(results.data);
-                this.displayFileInfo(file.name, results.data.length);
-            },
-            error: (error) => {
-                console.error('CSV 解析錯誤:', error);
-                alert('CSV 檔案解析失敗，請檢查檔案格式');
-            }
+        // 隱藏進度條
+        this.hideUploadProgress();
+
+        // 如果有新資料，更新系統
+        if (newInvoices.length > 0) {
+            // 合併新資料到現有資料
+            this.invoices = Array.from(this.invoiceMap.values());
+            
+            // 按日期排序
+            this.sortInvoicesByDate();
+            
+            // 更新過濾後的資料
+            this.filteredInvoices = [...this.invoices];
+            this.currentPage = 1;
+
+            // 儲存到 localStorage
+            this.saveToLocalStorage();
+
+            // 更新 UI
+            this.updateUI();
+            this.displayFileInfo(newInvoices.length, duplicateCount);
+        } else {
+            alert('沒有找到新的發票記錄（所有發票都已存在）');
+        }
+    }
+
+    parseCSVFile(file) {
+        return new Promise((resolve, reject) => {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                encoding: 'UTF-8',
+                complete: (results) => {
+                    const invoices = results.data.map((row, index) => {
+                        const amount = this.findAmount(row);
+                        const date = this.findDate(row);
+                        const item = this.findItem(row);
+                        const store = this.findStore(row);
+                        const invoiceNumber = this.findInvoiceNumber(row);
+
+                        return {
+                            id: Date.now() + index, // 使用時間戳確保唯一性
+                            date: this.parseDate(date),
+                            amount: this.parseAmount(amount),
+                            item: item || '未指定品項',
+                            store: store || '未指定商店',
+                            invoiceNumber: invoiceNumber || `INV-${Date.now()}-${index}`
+                        };
+                    }).filter(invoice => invoice.amount > 0); // 過濾無效記錄
+
+                    resolve(invoices);
+                },
+                error: (error) => {
+                    reject(error);
+                }
+            });
         });
     }
 
-    parseInvoices(data) {
-        this.invoices = data.map((row, index) => {
-            // Try to find the correct column names
-            const amount = this.findAmount(row);
-            const date = this.findDate(row);
-            const item = this.findItem(row);
-            const store = this.findStore(row);
-            const invoiceNumber = this.findInvoiceNumber(row);
-
-            return {
-                id: index + 1,
-                date: this.parseDate(date),
-                amount: this.parseAmount(amount),
-                item: item || '未指定品項',
-                store: store || '未指定商店',
-                invoiceNumber: invoiceNumber || `INV-${String(index + 1).padStart(6, '0')}`
-            };
-        }).filter(invoice => invoice.amount > 0); // Filter out invalid records
-
-        this.filteredInvoices = [...this.invoices];
-        this.currentPage = 1;
-
-        this.updateUI();
-    }
-
     findAmount(row) {
-        // Common column names for amount
         const amountFields = ['消費金額', '金額', 'Amount', 'amount', '總金額', 'Total'];
         for (const field of amountFields) {
             if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
@@ -134,7 +217,6 @@ class InvoiceAnalyzer {
     }
 
     findDate(row) {
-        // Common column names for date
         const dateFields = ['日期', 'Date', 'date', '發票日期', 'InvoiceDate', '時間'];
         for (const field of dateFields) {
             if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
@@ -145,7 +227,6 @@ class InvoiceAnalyzer {
     }
 
     findItem(row) {
-        // Common column names for item
         const itemFields = ['品項', '品名', 'Item', 'item', '商品名稱', 'Product', 'Description'];
         for (const field of itemFields) {
             if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
@@ -156,7 +237,6 @@ class InvoiceAnalyzer {
     }
 
     findStore(row) {
-        // Common column names for store
         const storeFields = ['商店名稱', '店名', 'Store', 'store', '賣方名稱', 'Seller', '商家'];
         for (const field of storeFields) {
             if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
@@ -167,7 +247,6 @@ class InvoiceAnalyzer {
     }
 
     findInvoiceNumber(row) {
-        // Common column names for invoice number
         const invoiceFields = ['發票號碼', 'InvoiceNumber', 'invoice', '發票號', 'No'];
         for (const field of invoiceFields) {
             if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
@@ -180,12 +259,11 @@ class InvoiceAnalyzer {
     parseDate(dateStr) {
         if (!dateStr) return new Date().toISOString().split('T')[0];
 
-        // Try different date formats
         const formats = [
-            /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
-            /^\d{2}\/\d{2}\/\d{4}$/, // MM/DD/YYYY
-            /^\d{4}\/\d{2}\/\d{2}$/, // YYYY/MM/DD
-            /^\d{4}\d{2}\d{2}$/ // YYYYMMDD
+            /^\d{4}-\d{2}-\d{2}$/,
+            /^\d{2}\/\d{2}\/\d{4}$/,
+            /^\d{4}\/\d{2}\/\d{2}$/,
+            /^\d{4}\d{2}\d{2}$/
         ];
 
         for (const format of formats) {
@@ -197,14 +275,12 @@ class InvoiceAnalyzer {
             }
         }
 
-        // If all else fails, return the original string
         return dateStr;
     }
 
     parseAmount(amountStr) {
         if (!amountStr) return 0;
 
-        // Remove currency symbols and commas
         const cleaned = String(amountStr)
             .replace(/[^\d.-]/g, '')
             .replace(/,/g, '');
@@ -213,32 +289,67 @@ class InvoiceAnalyzer {
         return isNaN(amount) ? 0 : Math.abs(amount);
     }
 
-    displayFileInfo(fileName, recordCount) {
+    sortInvoicesByDate() {
+        this.invoices.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateB - dateA; // 降序排列（最新的在前）
+        });
+    }
+
+    showUploadProgress() {
+        document.getElementById('uploadProgress').classList.remove('hidden');
+        this.updateProgress(0);
+    }
+
+    hideUploadProgress() {
+        document.getElementById('uploadProgress').classList.add('hidden');
+    }
+
+    updateProgress(percent) {
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        
+        progressBar.style.width = `${percent}%`;
+        progressText.textContent = `${Math.round(percent)}%`;
+    }
+
+    displayFileInfo(newCount, duplicateCount) {
         const fileInfo = document.getElementById('fileInfo');
         fileInfo.classList.remove('hidden');
 
-        document.getElementById('fileName').textContent = fileName;
-        document.getElementById('recordCount').textContent = this.invoices.length;
+        document.getElementById('totalImported').textContent = this.invoices.length;
+        document.getElementById('duplicateCount').textContent = duplicateCount;
+
+        // 顯示日期範圍
+        if (this.invoices.length > 0) {
+            const dates = this.invoices.map(inv => inv.date).sort();
+            const startDate = dates[0];
+            const endDate = dates[dates.length - 1];
+            document.getElementById('dateRange').textContent = `${startDate} ~ ${endDate}`;
+        }
+
+        // 顯示清除資料按鈕
+        document.getElementById('clearDataBtn').classList.remove('hidden');
     }
 
     updateUI() {
         if (this.invoices.length === 0) {
-            alert('沒有找到有效的發票記錄');
             return;
         }
 
-        // Show all sections
+        // 顯示所有區塊
         document.getElementById('statsSection').classList.remove('hidden');
         document.getElementById('chartsSection').classList.remove('hidden');
         document.getElementById('listSection').classList.remove('hidden');
 
-        // Update statistics
+        // 更新統計資料
         this.updateStatistics();
 
-        // Update charts
+        // 更新圖表
         this.updateCharts();
 
-        // Update table
+        // 更新表格
         this.updateTable();
     }
 
@@ -371,7 +482,7 @@ class InvoiceAnalyzer {
             monthlyMap[monthKey] += inv.amount;
         });
 
-        // Sort by month
+        // 按月份排序
         const sortedMonths = Object.keys(monthlyMap).sort();
 
         return {
@@ -392,7 +503,7 @@ class InvoiceAnalyzer {
             categoryMap[category] += inv.amount;
         });
 
-        // Sort by amount (descending) and take top 8
+        // 按金額排序並取前 8
         const sortedCategories = Object.entries(categoryMap)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 8);
@@ -407,12 +518,12 @@ class InvoiceAnalyzer {
         const tbody = document.getElementById('invoiceTableBody');
         const noResults = document.getElementById('noResults');
 
-        // Calculate pagination
+        // 計算分頁
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
         const pageData = this.filteredInvoices.slice(startIndex, endIndex);
 
-        // Clear existing rows
+        // 清空現有行
         tbody.innerHTML = '';
 
         if (pageData.length === 0) {
@@ -434,7 +545,7 @@ class InvoiceAnalyzer {
             });
         }
 
-        // Update pagination info
+        // 更新分頁資訊
         this.updatePagination();
     }
 
@@ -448,7 +559,7 @@ class InvoiceAnalyzer {
         document.getElementById('showingTo').textContent = endIndex;
         document.getElementById('totalRecords').textContent = totalRecords;
 
-        // Update button states
+        // 更新按鈕狀態
         document.getElementById('prevBtn').disabled = this.currentPage === 1;
         document.getElementById('nextBtn').disabled = this.currentPage >= totalPages;
     }
@@ -524,9 +635,92 @@ class InvoiceAnalyzer {
             maximumFractionDigits: 0
         });
     }
+
+    // localStorage 功能
+    saveToLocalStorage() {
+        try {
+            const data = {
+                invoices: this.invoices,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('invoiceAnalyzer_data', JSON.stringify(data));
+        } catch (error) {
+            console.error('儲存到 localStorage 時發生錯誤:', error);
+        }
+    }
+
+    loadFromLocalStorage() {
+        try {
+            const data = localStorage.getItem('invoiceAnalyzer_data');
+            if (data) {
+                const parsed = JSON.parse(data);
+                this.invoices = parsed.invoices || [];
+                
+                // 重建 invoiceMap
+                this.invoiceMap = new Map();
+                this.invoices.forEach(invoice => {
+                    this.invoiceMap.set(invoice.invoiceNumber, invoice);
+                });
+
+                this.filteredInvoices = [...this.invoices];
+                this.currentPage = 1;
+
+                if (this.invoices.length > 0) {
+                    this.updateUI();
+                    this.displayFileInfo(0, 0);
+                }
+            }
+        } catch (error) {
+            console.error('從 localStorage 載入時發生錯誤:', error);
+        }
+    }
+
+    clearAllData() {
+        if (confirm('確定要清除所有發票資料嗎？此動作無法復原。')) {
+            // 清除 localStorage
+            localStorage.removeItem('invoiceAnalyzer_data');
+            localStorage.removeItem('invoiceAnalyzer_visited');
+
+            // 清除記憶體中的資料
+            this.invoices = [];
+            this.filteredInvoices = [];
+            this.invoiceMap.clear();
+            this.currentPage = 1;
+
+            // 銷毀圖表
+            if (this.monthlyChart) {
+                this.monthlyChart.destroy();
+                this.monthlyChart = null;
+            }
+            if (this.categoryChart) {
+                this.categoryChart.destroy();
+                this.categoryChart = null;
+            }
+
+            // 隱藏所有區塊
+            document.getElementById('statsSection').classList.add('hidden');
+            document.getElementById('chartsSection').classList.add('hidden');
+            document.getElementById('listSection').classList.add('hidden');
+            document.getElementById('fileInfo').classList.add('hidden');
+            document.getElementById('clearDataBtn').classList.add('hidden');
+
+            alert('資料已清除');
+        }
+    }
+
+    // Modal 功能
+    showHelpModal() {
+        document.getElementById('helpModal').classList.remove('hidden');
+        document.getElementById('helpModal').classList.add('flex');
+    }
+
+    hideHelpModal() {
+        document.getElementById('helpModal').classList.add('hidden');
+        document.getElementById('helpModal').classList.remove('flex');
+    }
 }
 
-// Initialize the application when DOM is ready
+// 初始化應用程式
 document.addEventListener('DOMContentLoaded', () => {
     new InvoiceAnalyzer();
 });

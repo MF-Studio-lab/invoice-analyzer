@@ -13,14 +13,22 @@
     <!-- Header -->
     <header class="bg-gray-800 shadow-lg border-b border-gray-700">
         <div class="container mx-auto px-4 py-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-white">📊 載具電子發票分析系統</h1>
                     <p class="text-gray-400 mt-1">上傳財政部電子發票 CSV 檔案，分析您的消費記錄</p>
                 </div>
-                <div class="hidden md:block">
+                <div class="flex items-center space-x-3 mt-4 md:mt-0">
+                    <button id="helpBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2">
+                        <span>❓</span>
+                        <span class="hidden md:inline">如何取得發票</span>
+                    </button>
+                    <button id="clearDataBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors hidden flex items-center space-x-2">
+                        <span>🗑️</span>
+                        <span class="hidden md:inline">清除資料</span>
+                    </button>
                     <span class="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium">
-                        v1.0.0
+                        v2.0.0
                     </span>
                 </div>
             </div>
@@ -32,21 +40,51 @@
         <!-- Upload Section -->
         <section class="mb-8">
             <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
-                <h2 class="text-xl font-semibold mb-4 text-white">📤 上傳發票檔案</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-white">📤 上傳發票檔案</h2>
+                    <span class="text-sm text-gray-400">支援多檔案上傳，自動整合與去重</span>
+                </div>
                 <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer" id="dropZone">
-                    <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+                    <input type="file" id="csvFileInput" accept=".csv" multiple class="hidden">
                     <div class="text-gray-400">
                         <svg class="w-16 h-16 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                         </svg>
                         <p class="text-lg mb-2">拖放 CSV 檔案到這裡，或點擊選擇檔案</p>
-                        <p class="text-sm text-gray-500">支援財政部電子發票 CSV 格式</p>
+                        <p class="text-sm text-gray-500">支援多檔案上傳 • 自動整合與去重 • 支援財政部電子發票 CSV 格式</p>
                     </div>
                 </div>
+
+                <!-- Upload Progress -->
+                <div id="uploadProgress" class="mt-4 hidden">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-300">處理中...</span>
+                            <span class="text-sm text-blue-400" id="progressText">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-600 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Info -->
                 <div id="fileInfo" class="mt-4 hidden">
                     <div class="bg-green-900 border border-green-700 rounded-lg p-4">
-                        <p class="text-green-300 font-medium">✅ 檔案已上傳：<span id="fileName"></span></p>
-                        <p class="text-green-400 text-sm mt-1">記錄數：<span id="recordCount">0</span> 筆</p>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-300 font-medium">✅ 資料已匯入</p>
+                                <p class="text-green-400 text-sm mt-1">
+                                    已匯入 <span id="totalImported">0</span> 筆發票
+                                    <span class="mx-2">|</span>
+                                    剔除重複 <span id="duplicateCount">0</span> 筆
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-green-400 text-sm">日期範圍</p>
+                                <p class="text-green-300 font-medium" id="dateRange">-</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -172,12 +210,102 @@
         </section>
     </main>
 
+    <!-- Help Modal -->
+    <div id="helpModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-white">❓ 如何取得發票檔案</h2>
+                    <button id="closeModalBtn" class="text-gray-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Step 1 -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">1</div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white mb-2">登入財政部電子發票整合服務平台</h3>
+                                <p class="text-gray-300 text-sm">前往 <a href="https://einvoice.nat.gov.tw/" target="_blank" class="text-blue-400 hover:text-blue-300 underline">https://einvoice.nat.gov.tw/</a> 並使用您的載具手機條碼登入</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">2</div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white mb-2">進入發票查詢/列印/下載</h3>
+                                <p class="text-gray-300 text-sm">點擊「手機條碼專區」 > 「發票查詢/列印/下載」</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">3</div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white mb-2">設定日期區間並查詢</h3>
+                                <p class="text-gray-300 text-sm">選擇您要查詢的日期範圍（建議以月為單位），然後點擊「查詢」按鈕</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 font-bold">4</div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white mb-2">下載 CSV 檔案</h3>
+                                <p class="text-gray-300 text-sm">捲動至頁面最下方，點擊「下載 CSV」按鈕</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tip -->
+                    <div class="bg-yellow-900 border border-yellow-700 rounded-lg p-4">
+                        <div class="flex items-start space-x-3">
+                            <span class="text-2xl">💡</span>
+                            <div>
+                                <h3 class="text-lg font-semibold text-yellow-300 mb-2">多月份下載提示</h3>
+                                <p class="text-yellow-200 text-sm">若您需要分析多個月份的發票，請重複上述步驟，分別下載各月份的 CSV 檔案。然後將所有檔案一起拖入本網站，系統會自動整合並剔除重複的發票。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Privacy Notice -->
+                    <div class="bg-green-900 border border-green-700 rounded-lg p-4">
+                        <div class="flex items-start space-x-3">
+                            <span class="text-2xl">🔒</span>
+                            <div>
+                                <h3 class="text-lg font-semibold text-green-300 mb-2">隱私保護</h3>
+                                <p class="text-green-200 text-sm">您的發票資料僅在瀏覽器端處理，不會上傳到任何伺服器。重新整理網頁後，資料會自動從瀏覽器的 localStorage 載入。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button id="closeModalBtnBottom" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        我知道了
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-gray-800 border-t border-gray-700 mt-12">
         <div class="container mx-auto px-4 py-6">
             <div class="text-center text-gray-400 text-sm">
                 <p>載具電子發票分析系統 © 2026 | 由 Hermes Agent 生成</p>
-                <p class="mt-1">資料僅在瀏覽器端處理，不會上傳到任何伺服器</p>
+                <p class="mt-1">資料僅在瀏覽器端處理，不會上傳到任何伺服器 • 支援 localStorage 持久化</p>
             </div>
         </div>
     </footer>

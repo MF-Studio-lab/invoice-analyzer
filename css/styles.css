@@ -1,4 +1,4 @@
-/* Custom Styles for Invoice Analyzer */
+/* Custom Styles for Invoice Analyzer v2.0.0 */
 
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
@@ -56,6 +56,11 @@ button:active {
     transform: scale(0.98);
 }
 
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 /* Input Styling */
 input:focus {
     outline: none;
@@ -89,6 +94,36 @@ input:focus {
     animation: spin 0.8s linear infinite;
 }
 
+/* Progress Bar Animation */
+#progressBar {
+    transition: width 0.3s ease;
+}
+
+/* Modal Styling */
+#helpModal {
+    backdrop-filter: blur(4px);
+}
+
+#helpModal .bg-gray-800 {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Step Number Styling */
+.bg-blue-600.rounded-full {
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .container {
@@ -106,6 +141,12 @@ input:focus {
 
     h3 {
         font-size: 1.125rem;
+    }
+
+    /* Modal on mobile */
+    #helpModal .bg-gray-800 {
+        max-height: 95vh;
+        margin: 0.5rem;
     }
 }
 
@@ -181,7 +222,104 @@ canvas {
     }
 
     button,
-    input {
-        display: none;
+    input,
+    #helpModal,
+    #uploadProgress {
+        display: none !important;
     }
+}
+
+/* Custom Scrollbar for Modal */
+#helpModal .overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+
+#helpModal .overflow-y-auto::-webkit-scrollbar-track {
+    background: #374151;
+}
+
+#helpModal .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #6b7280;
+    border-radius: 3px;
+}
+
+#helpModal .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Link Styling in Modal */
+a {
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: #60a5fa;
+}
+
+/* File Info Card Animation */
+#fileInfo {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Progress Bar Container */
+.bg-gray-600 {
+    background-color: #4b5563;
+}
+
+/* Responsive Table */
+@media (max-width: 640px) {
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        font-size: 0.875rem;
+    }
+
+    th, td {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* Button Group Spacing */
+.flex.space-x-2 button {
+    min-width: 80px;
+}
+
+/* Search Input Icon Position */
+.relative input {
+    padding-left: 2.5rem;
+}
+
+/* Clear Data Button Warning */
+#clearDataBtn:hover {
+    background-color: #dc2626;
+}
+
+/* Help Button */
+#helpBtn:hover {
+    background-color: #2563eb;
+}
+
+/* Export Button */
+#exportBtn:hover {
+    background-color: #2563eb;
+}
+
+/* Pagination Buttons */
+#prevBtn:hover,
+#nextBtn:hover {
+    background-color: #4b5563;
 }
