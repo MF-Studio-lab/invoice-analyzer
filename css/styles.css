@@ -1,0 +1,187 @@
+/* Custom Styles for Invoice Analyzer */
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* Drop Zone Styling */
+#dropZone {
+    transition: all 0.3s ease;
+}
+
+#dropZone.dragover {
+    border-color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+#dropZone:hover {
+    border-color: #3b82f6;
+}
+
+/* Table Styling */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Button Styling */
+button {
+    transition: all 0.2s ease;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Input Styling */
+input:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Card Hover Effect */
+.bg-gray-800 {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bg-gray-800:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Loading Animation */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    h3 {
+        font-size: 1.125rem;
+    }
+}
+
+/* Chart Container */
+canvas {
+    max-width: 100%;
+    height: auto !important;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-success {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.status-warning {
+    background-color: rgba(234, 179, 8, 0.2);
+    color: #eab308;
+}
+
+.status-error {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+/* Utility Classes */
+.text-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.shadow-glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background-color: white;
+        color: black;
+    }
+
+    .bg-gray-800,
+    .bg-gray-700 {
+        background-color: white !important;
+        color: black !important;
+    }
+
+    button,
+    input {
+        display: none;
+    }
+}

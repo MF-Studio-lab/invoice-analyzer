@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>載具電子發票分析系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-lg border-b border-gray-700">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-white">📊 載具電子發票分析系統</h1>
+                    <p class="text-gray-400 mt-1">上傳財政部電子發票 CSV 檔案，分析您的消費記錄</p>
+                </div>
+                <div class="hidden md:block">
+                    <span class="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+                        v1.0.0
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Upload Section -->
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-white">📤 上傳發票檔案</h2>
+                <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer" id="dropZone">
+                    <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+                    <div class="text-gray-400">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <p class="text-lg mb-2">拖放 CSV 檔案到這裡，或點擊選擇檔案</p>
+                        <p class="text-sm text-gray-500">支援財政部電子發票 CSV 格式</p>
+                    </div>
+                </div>
+                <div id="fileInfo" class="mt-4 hidden">
+                    <div class="bg-green-900 border border-green-700 rounded-lg p-4">
+                        <p class="text-green-300 font-medium">✅ 檔案已上傳：<span id="fileName"></span></p>
+                        <p class="text-green-400 text-sm mt-1">記錄數：<span id="recordCount">0</span> 筆</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Cards -->
+        <section id="statsSection" class="mb-8 hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">總消費金額</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="totalAmount">NT$0</p>
+                        </div>
+                        <div class="text-3xl">💰</div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">發票總數</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="totalInvoices">0</p>
+                        </div>
+                        <div class="text-3xl">📄</div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">平均消費</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="avgAmount">NT$0</p>
+                        </div>
+                        <div class="text-3xl">📊</div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-400 text-sm">商店數量</p>
+                            <p class="text-2xl font-bold text-white mt-1" id="totalStores">0</p>
+                        </div>
+                        <div class="text-3xl">🏪</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section id="chartsSection" class="mb-8 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Monthly Trend Chart -->
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h3 class="text-lg font-semibold mb-4 text-white">📈 每月消費走勢</h3>
+                    <div class="relative h-80">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Category Pie Chart -->
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h3 class="text-lg font-semibold mb-4 text-white">🥧 消費類別比例</h3>
+                    <div class="relative h-80">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Invoice List Section -->
+        <section id="listSection" class="hidden">
+            <div class="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 md:mb-0">📋 發票明細清單</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="搜尋商店、品項..." 
+                                class="bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64">
+                            <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <button id="exportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            📥 匯出 CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-700 text-gray-300">
+                                <th class="px-4 py-3 text-left text-sm font-medium">日期</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">發票號碼</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">商店名稱</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium">品項</th>
+                                <th class="px-4 py-3 text-right text-sm font-medium">金額</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceTableBody" class="divide-y divide-gray-700">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="noResults" class="hidden text-center py-8 text-gray-400">
+                    <p>沒有找到符合的記錄</p>
+                </div>
+
+                <div id="pagination" class="mt-6 flex items-center justify-between">
+                    <p class="text-sm text-gray-400">
+                        顯示 <span id="showingFrom">0</span> - <span id="showingTo">0</span> 筆，共 <span id="totalRecords">0</span> 筆
+                    </p>
+                    <div class="flex space-x-2">
+                        <button id="prevBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            上一頁
+                        </button>
+                        <button id="nextBtn" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            下一頁
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-12">
+        <div class="container mx-auto px-4 py-6">
+            <div class="text-center text-gray-400 text-sm">
+                <p>載具電子發票分析系統 © 2026 | 由 Hermes Agent 生成</p>
+                <p class="mt-1">資料僅在瀏覽器端處理，不會上傳到任何伺服器</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
