@@ -635,7 +635,7 @@ class InvoiceAnalyzer {
                 { keywords: ['爭鮮','麥當勞','海景世界','新東陽','五二早餐'], category: '餐飲 / 外食' },
                 { keywords: ['秀泰影城','影城'], category: '娛樂' },
                 { keywords: ['全聯','家樂福','家福'], category: '超市' },
-                { keywords: ['7-11','7-ELEVEN','7 十一','超商','統一超商','全家'], category: '超商' },
+                { keywords: ['7-11','7-ELEVEN','7 十一','超商','統一超商','全家'], category: '便利商店' },
                 { keywords: ['中油','千越加油站','國雲科技','加油站','加油'], category: '加油 / 交通' },
                 { keywords: ['歐巴螞食品'], category: '烘焙' },
                 { keywords: ['Google','Netflix'], category: '數位訂閱' },
