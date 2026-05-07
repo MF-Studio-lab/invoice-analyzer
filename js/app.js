@@ -129,10 +129,11 @@ class InvoiceAnalyzer {
             try {
                 const fileInvoices = await this.parseCSVFile(file);
                 
-                // 去重處理
+                // 去重處理 - 使用發票號碼+品項作為唯一鍵，保留同一張發票的多個品項
                 fileInvoices.forEach(invoice => {
-                    if (!this.invoiceMap.has(invoice.invoiceNumber)) {
-                        this.invoiceMap.set(invoice.invoiceNumber, invoice);
+                    const uniqueKey = `${invoice.invoiceNumber}_${invoice.item}`;
+                    if (!this.invoiceMap.has(uniqueKey)) {
+                        this.invoiceMap.set(uniqueKey, invoice);
                         newInvoices.push(invoice);
                     } else {
                         duplicateCount++;
