@@ -1,4 +1,4 @@
-// Invoice Analyzer - Main Application Logic v2.0.0
+// Invoice Analyzer - Main Application Logic v2.0.1
 
 class InvoiceAnalyzer {
     constructor() {
