@@ -614,14 +614,25 @@ class InvoiceAnalyzer {
             categoryMap[category] += inv.amount;
         });
 
-        // 按金額排序並取前 8
-        const sortedCategories = Object.entries(categoryMap)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 8);
+        // 按金額排序
+        const entries = Object.entries(categoryMap)
+            .sort((a, b) => b[1] - a[1]);
+
+        let labels, data;
+        if (entries.length <= 8) {
+            labels = entries.map(e => e[0]);
+            data = entries.map(e => e[1]);
+        } else {
+            const top8 = entries.slice(0, 8);
+            const rest = entries.slice(8);
+            const restSum = rest.reduce((sum, e) => sum + e[1], 0);
+            labels = top8.map(e => e[0]).concat(['其他']);
+            data = top8.map(e => e[1]).concat([restSum]);
+        }
 
         return {
-            labels: sortedCategories.map(([name]) => name),
-            data: sortedCategories.map(([, amount]) => amount)
+            labels: labels,
+            data: data
         };
     }
 
