@@ -231,6 +231,7 @@ class InvoiceAnalyzer {
                             date: this.parseDate(date),
                             amount: this.parseAmount(amount),
                             item: item || '未指定品項',
+                            category: category,
                             store: store || '未指定商店',
                             invoiceNumber: invoiceNumber || `INV-${Date.now()}-${index}`
                         };
@@ -722,7 +723,6 @@ class InvoiceAnalyzer {
                     <td class="px-4 py-3 text-sm text-gray-300 font-mono">${invoice.invoiceNumber}</td>
                     <td class="px-4 py-3 text-sm text-gray-300">${invoice.store}</td>
                     <td class="px-4 py-3 text-sm text-gray-300">${invoice.category}</td>
-                    <td class="px-4 py-3 text-sm text-gray-300">${invoice.item}</td>
                     <td class="px-4 py-3 text-sm text-gray-300 text-right font-medium">${this.formatCurrency(invoice.amount)}</td>
                 `;
                 tbody.appendChild(row);
