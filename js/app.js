@@ -631,15 +631,17 @@ class InvoiceAnalyzer {
             const s = store.trim();
             // Define keyword -> category mappings
             const rules = [
-                { keywords: ['加油站', '油品'], category: '加油站' },
-                { keywords: ['全聯', '全家', '7-ELEVEN', '7 十一', 'OK商店', '百貨'], category: '超商' },
-                { keywords: ['藏壽司'], category: '藏壽司' },
-                { keywords: ['星巴克'], category: '星巴克' },
-                { keywords: ['愛買', '大潤發', '家樂福', '郵局'], category: '大賣場' },
-                { keywords: ['康是美', '屈臣氏'], category: '藥妝' },
-                { keywords: ['餐廳', '餐飲', '小吃', '咖啡', '茶坊', '茶店'], category: '餐飲' },
-                { keywords: ['電影院', '影城'], category: '娛樂' },
-                { keywords: ['加油站', '油'], category: '加油站' },
+                { keywords: ['至盛科技','燦坤','富邦媒體','momo'], category: '3C / 科技' },
+                { keywords: ['爭鮮','麥當勞','海景世界','新東陽','五二早餐'], category: '餐飲 / 外食' },
+                { keywords: ['秀泰影城'], category: '娛樂' },
+                { keywords: ['全聯','家樂福'], category: '超市' },
+                { keywords: ['7-11','7-ELEVEN','7 十一'], category: '超商' },
+                { keywords: ['中油','千越加油站','國雲科技'], category: '加油 / 交通' },
+                { keywords: ['歐巴螞食品'], category: '烘焙' },
+                { keywords: ['Google','Netflix'], category: '數位訂閱' },
+                { keywords: ['台東農會'], category: '伴手禮' },
+                { keywords: ['正統百貨五金行'], category: '日用品' },
+                { keywords: ['藏壽司'], category: '迴轉壽司' },
             ];
             for (const rule of rules) {
                 for (const kw of rule.keywords) {
