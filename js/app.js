@@ -56,6 +56,10 @@ class InvoiceAnalyzer {
         const helpBtn = document.getElementById('helpBtn');
         helpBtn.addEventListener('click', () => this.showHelpModal());
 
+        // Chart period selector
+        const chartPeriod = document.getElementById('chartPeriod');
+        chartPeriod.addEventListener('change', () => this.updateMonthlyChart());
+
         // Modal close buttons
         document.getElementById('closeModalBtn').addEventListener('click', () => this.hideHelpModal());
         document.getElementById('closeModalBtnBottom').addEventListener('click', () => this.hideHelpModal());
@@ -114,6 +118,7 @@ class InvoiceAnalyzer {
         let processedCount = 0;
         let newInvoices = [];
         let duplicateCount = 0;
+        let duplicateInvoices = []; // 記錄被剔除的重複項目
 
         // 顯示進度條
         this.showUploadProgress();
@@ -137,6 +142,7 @@ class InvoiceAnalyzer {
                         newInvoices.push(invoice);
                     } else {
                         duplicateCount++;
+                        duplicateInvoices.push(invoice); // 記錄被剔除的重複項目
                     }
                 });
 
@@ -168,7 +174,7 @@ class InvoiceAnalyzer {
 
             // 更新 UI
             this.updateUI();
-            this.displayFileInfo(newInvoices.length, duplicateCount);
+            this.displayFileInfo(newInvoices.length, duplicateCount, duplicateInvoices);
         } else {
             alert('沒有找到新的發票記錄（所有發票都已存在）');
         }
@@ -261,22 +267,42 @@ class InvoiceAnalyzer {
         if (!dateStr) return new Date().toISOString().split('T')[0];
 
         const formats = [
-            /^\d{4}-\d{2}-\d{2}$/,
-            /^\d{2}\/\d{2}\/\d{4}$/,
-            /^\d{4}\/\d{2}\/\d{2}$/,
-            /^\d{4}\d{2}\d{2}$/
+            /^\d{4}-\d{2}-\d{2}$/,           // 2026-03-30
+            /^\d{2}\/\d{2}\/\d{4}$/,         // 03/30/2026
+            /^\d{4}\/\d{2}\/\d{2}$/,         // 2026/03/30
+            /^\d{4}\d{2}\d{2}$/,             // 20260330
+            /^\d{8}$/                         // 20260330 (8位數字)
         ];
 
         for (const format of formats) {
             if (format.test(dateStr)) {
-                const date = new Date(dateStr.replace(/\//g, '-'));
+                let date;
+                
+                // 處理 8 位數字格式 (20260330)
+                if (dateStr.length === 8 && /^\d{8}$/.test(dateStr)) {
+                    const year = dateStr.substring(0, 4);
+                    const month = dateStr.substring(4, 6);
+                    const day = dateStr.substring(6, 8);
+                    date = new Date(`${year}-${month}-${day}`);
+                } else {
+                    date = new Date(dateStr.replace(/\//g, '-'));
+                }
+                
                 if (!isNaN(date.getTime())) {
                     return date.toISOString().split('T')[0];
                 }
             }
         }
 
-        return dateStr;
+        // 如果所有格式都不匹配，嘗試直接解析
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+            return date.toISOString().split('T')[0];
+        }
+
+        // 如果仍然失敗，返回當前日期
+        console.warn(`無法解析日期: ${dateStr}，使用當前日期`);
+        return new Date().toISOString().split('T')[0];
     }
 
     parseAmount(amountStr) {
@@ -315,7 +341,7 @@ class InvoiceAnalyzer {
         progressText.textContent = `${Math.round(percent)}%`;
     }
 
-    displayFileInfo(newCount, duplicateCount) {
+    displayFileInfo(newCount, duplicateCount, duplicateInvoices = []) {
         const fileInfo = document.getElementById('fileInfo');
         fileInfo.classList.remove('hidden');
 
@@ -330,8 +356,55 @@ class InvoiceAnalyzer {
             document.getElementById('dateRange').textContent = `${startDate} ~ ${endDate}`;
         }
 
+        // 顯示被剔除的重複項目
+        if (duplicateInvoices.length > 0) {
+            this.showDuplicateInvoices(duplicateInvoices);
+        }
+
         // 顯示清除資料按鈕
         document.getElementById('clearDataBtn').classList.remove('hidden');
+    }
+
+    showDuplicateInvoices(duplicateInvoices) {
+        // 創建或更新重複項目顯示區域
+        let duplicateSection = document.getElementById('duplicateSection');
+        if (!duplicateSection) {
+            duplicateSection = document.createElement('div');
+            duplicateSection.id = 'duplicateSection';
+            duplicateSection.className = 'mt-4 bg-yellow-900 border border-yellow-700 rounded-lg p-4';
+            
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.parentNode.insertBefore(duplicateSection, fileInfo.nextSibling);
+        }
+
+        // 生成重複項目列表
+        const duplicateList = duplicateInvoices.map(inv => `
+            <div class="flex items-center justify-between py-2 border-b border-yellow-700 last:border-0">
+                <div class="flex-1">
+                    <p class="text-yellow-300 text-sm font-medium">${inv.invoiceNumber}</p>
+                    <p class="text-yellow-400 text-xs">${inv.date} | ${inv.store}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-yellow-300 text-sm">${inv.item}</p>
+                    <p class="text-yellow-400 text-xs">NT$${inv.amount.toLocaleString()}</p>
+                </div>
+            </div>
+        `).join('');
+
+        duplicateSection.innerHTML = `
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <p class="text-yellow-300 font-medium">⚠️ 剔除重複項目 (${duplicateInvoices.length} 筆)</p>
+                    <p class="text-yellow-400 text-xs mt-1">以下項目因重複已被剔除，請確認是否正確</p>
+                </div>
+                <button onclick="document.getElementById('duplicateSection').remove()" class="text-yellow-400 hover:text-yellow-300 text-sm">
+                    ✕ 關閉
+                </button>
+            </div>
+            <div class="max-h-60 overflow-y-auto">
+                ${duplicateList}
+            </div>
+        `;
     }
 
     updateUI() {
@@ -371,7 +444,9 @@ class InvoiceAnalyzer {
     }
 
     updateMonthlyChart() {
-        const monthlyData = this.getMonthlyData();
+        const period = document.getElementById('chartPeriod').value;
+        const chartData = period === 'monthly' ? this.getMonthlyData() : this.getDailyData();
+        const label = period === 'monthly' ? '每月消費金額' : '每日消費金額';
 
         const ctx = document.getElementById('monthlyChart').getContext('2d');
 
@@ -382,10 +457,10 @@ class InvoiceAnalyzer {
         this.monthlyChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: monthlyData.labels,
+                labels: chartData.labels,
                 datasets: [{
-                    label: '每月消費金額',
-                    data: monthlyData.data,
+                    label: label,
+                    data: chartData.data,
                     borderColor: 'rgb(59, 130, 246)',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     fill: true,
@@ -405,7 +480,8 @@ class InvoiceAnalyzer {
                 scales: {
                     x: {
                         ticks: {
-                            color: '#9ca3af'
+                            color: '#9ca3af',
+                            maxTicksLimit: period === 'daily' ? 10 : 12 // 限制 X 軸標籤數量
                         },
                         grid: {
                             color: 'rgba(75, 85, 99, 0.3)'
@@ -489,6 +565,27 @@ class InvoiceAnalyzer {
         return {
             labels: sortedMonths,
             data: sortedMonths.map(month => monthlyMap[month])
+        };
+    }
+
+    getDailyData() {
+        const dailyMap = {};
+
+        this.invoices.forEach(inv => {
+            const dateKey = inv.date; // 使用 YYYY-MM-DD 格式
+
+            if (!dailyMap[dateKey]) {
+                dailyMap[dateKey] = 0;
+            }
+            dailyMap[dateKey] += inv.amount;
+        });
+
+        // 按日期排序
+        const sortedDates = Object.keys(dailyMap).sort();
+
+        return {
+            labels: sortedDates,
+            data: sortedDates.map(date => dailyMap[date])
         };
     }
 
