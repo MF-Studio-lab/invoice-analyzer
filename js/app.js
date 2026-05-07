@@ -212,6 +212,33 @@ class InvoiceAnalyzer {
         }
     }
 
+
+    _getCategoryFromStore(store) {
+        if (!store) return null;
+        const s = store.trim();
+        // Define keyword -> category mappings
+        const rules = [
+            { keywords: ['至盛科技','燦坤','富邦媒體','momo'], category: '3C / 科技' },
+            { keywords: ['爭鮮','麥當勞','海景世界','新東陽','五二早餐'], category: '餐飲 / 外食' },
+            { keywords: ['秀泰影城','影城'], category: '娛樂' },
+            { keywords: ['全聯','家樂福','家福'], category: '超市' },
+            { keywords: ['7-11','7-ELEVEN','7 十一','超商','統一超商','全家'], category: '便利商店' },
+            { keywords: ['中油','千越加油站','國雲科技','加油站','加油'], category: '加油 / 交通' },
+            { keywords: ['歐巴螞食品'], category: '烘焙' },
+            { keywords: ['Google','Netflix'], category: '數位訂閱' },
+            { keywords: ['台東農會'], category: '伴手禮' },
+            { keywords: ['正統百貨五金行'], category: '日用品' },
+            { keywords: ['藏壽司'], category: '迴轉壽司' }
+        ];
+        for (const rule of rules) {
+            for (const kw of rule.keywords) {
+                if (s.includes(kw)) {
+                    return rule.category;
+                }
+            }
+        }
+        return null; // will go to 其他
+    }
     parseCSVFile(file) {
         return new Promise((resolve, reject) => {
             Papa.parse(file, {
@@ -224,7 +251,7 @@ class InvoiceAnalyzer {
                         const date = this.findDate(row);
                         const item = this.findItem(row);
                         const store = this.findStore(row);
-                        const category = getCategoryFromStore(store) || '其他';
+                        const category = this._getCategoryFromStore(store) || '其他';
                         const invoiceNumber = this.findInvoiceNumber(row);
 
                         return {
@@ -623,41 +650,13 @@ class InvoiceAnalyzer {
         };
     }
 
-            getCategoryData() {
+    getCategoryData() {
         const categoryMap = {};
         const otherDetails = [];
 
-        // Helper to map store name to category
-        const getCategoryFromStore = (store) => {
-            if (!store) return null;
-            const s = store.trim();
-            // Define keyword -> category mappings
-            const rules = [
-                { keywords: ['至盛科技','燦坤','富邦媒體','momo'], category: '3C / 科技' },
-                { keywords: ['爭鮮','麥當勞','海景世界','新東陽','五二早餐'], category: '餐飲 / 外食' },
-                { keywords: ['秀泰影城','影城'], category: '娛樂' },
-                { keywords: ['全聯','家樂福','家福'], category: '超市' },
-                { keywords: ['7-11','7-ELEVEN','7 十一','超商','統一超商','全家'], category: '便利商店' },
-                { keywords: ['中油','千越加油站','國雲科技','加油站','加油'], category: '加油 / 交通' },
-                { keywords: ['歐巴螞食品'], category: '烘焙' },
-                { keywords: ['Google','Netflix'], category: '數位訂閱' },
-                { keywords: ['台東農會'], category: '伴手禮' },
-                { keywords: ['正統百貨五金行'], category: '日用品' },
-                { keywords: ['藏壽司'], category: '迴轉壽司' },
-            ];
-            for (const rule of rules) {
-                for (const kw of rule.keywords) {
-                    if (s.includes(kw)) {
-                        return rule.category;
-                    }
-                }
-            }
-            return null; // will go to 其他
-        };
-
         this.invoices.forEach(inv => {
             const rawStore = inv.store || '';
-            const category = getCategoryFromStore(rawStore);
+            const category = this._getCategoryFromStore(rawStore);
             if (category === null) {
                 // treat as 其他
                 if (!categoryMap['其他']) categoryMap['其他'] = 0;
