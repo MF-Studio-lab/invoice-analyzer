@@ -207,7 +207,7 @@ class InvoiceAnalyzer {
     }
 
     findAmount(row) {
-        const amountFields = ['消費金額', '金額', 'Amount', 'amount', '總金額', 'Total'];
+        const amountFields = ['發票金額', '消費金額', '金額', 'Amount', 'amount', '總金額', 'Total', '消費明細_金額'];
         for (const field of amountFields) {
             if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
                 return row[field];
@@ -227,7 +227,7 @@ class InvoiceAnalyzer {
     }
 
     findItem(row) {
-        const itemFields = ['品項', '品名', 'Item', 'item', '商品名稱', 'Product', 'Description'];
+        const itemFields = ['品項', '品名', '消費明細_品名', 'Item', 'item', '商品名稱', 'Product', 'Description'];
         for (const field of itemFields) {
             if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
                 return row[field];
