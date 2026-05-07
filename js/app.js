@@ -224,6 +224,7 @@ class InvoiceAnalyzer {
                         const date = this.findDate(row);
                         const item = this.findItem(row);
                         const store = this.findStore(row);
+                        const category = getCategoryFromStore(store) || '其他';
                         const invoiceNumber = this.findInvoiceNumber(row);
 
                         return {
