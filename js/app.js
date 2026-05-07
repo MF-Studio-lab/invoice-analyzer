@@ -134,15 +134,28 @@ class InvoiceAnalyzer {
             try {
                 const fileInvoices = await this.parseCSVFile(file);
                 
-                // 去重處理 - 使用發票號碼+品項+金額作為唯一鍵，保留同一張發票的不同品項和不同金額
+                // 去重處理 - 只在多個檔案之間進行去重，使用發票號碼作為唯一鍵
+                // 單一檔案內不進行去重，因為同一張發票可能有多個相同品項
+                // 將同一張發票的所有品項作為一個整體處理
+                const invoiceMap = new Map(); // 暫存本檔案的發票
+                
                 fileInvoices.forEach(invoice => {
-                    const uniqueKey = `${invoice.invoiceNumber}_${invoice.item}_${invoice.amount}`;
-                    if (!this.invoiceMap.has(uniqueKey)) {
-                        this.invoiceMap.set(uniqueKey, invoice);
-                        newInvoices.push(invoice);
+                    if (!invoiceMap.has(invoice.invoiceNumber)) {
+                        invoiceMap.set(invoice.invoiceNumber, []);
+                    }
+                    invoiceMap.get(invoice.invoiceNumber).push(invoice);
+                });
+                
+                // 檢查每張發票是否已存在
+                invoiceMap.forEach((items, invoiceNumber) => {
+                    if (!this.invoiceMap.has(invoiceNumber)) {
+                        // 新發票，添加所有品項
+                        this.invoiceMap.set(invoiceNumber, items);
+                        newInvoices.push(...items);
                     } else {
-                        duplicateCount++;
-                        duplicateInvoices.push(invoice); // 記錄被剔除的重複項目
+                        // 重複發票，記錄所有品項為重複
+                        duplicateCount += items.length;
+                        duplicateInvoices.push(...items);
                     }
                 });
 
@@ -159,8 +172,8 @@ class InvoiceAnalyzer {
 
         // 如果有新資料，更新系統
         if (newInvoices.length > 0) {
-            // 合併新資料到現有資料
-            this.invoices = Array.from(this.invoiceMap.values());
+            // 合併新資料到現有資料 - 將發票數組展平為單一數組
+            this.invoices = Array.from(this.invoiceMap.values()).flat();
             
             // 按日期排序
             this.sortInvoicesByDate();
@@ -754,10 +767,13 @@ class InvoiceAnalyzer {
                 const parsed = JSON.parse(data);
                 this.invoices = parsed.invoices || [];
                 
-                // 重建 invoiceMap
+                // 重建 invoiceMap - 將同一張發票的所有品項存儲為數組
                 this.invoiceMap = new Map();
                 this.invoices.forEach(invoice => {
-                    this.invoiceMap.set(invoice.invoiceNumber, invoice);
+                    if (!this.invoiceMap.has(invoice.invoiceNumber)) {
+                        this.invoiceMap.set(invoice.invoiceNumber, []);
+                    }
+                    this.invoiceMap.get(invoice.invoiceNumber).push(invoice);
                 });
 
                 this.filteredInvoices = [...this.invoices];
