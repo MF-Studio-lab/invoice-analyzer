@@ -757,8 +757,8 @@ class InvoiceAnalyzer {
             this.filteredInvoices = this.invoices.filter(invoice =>
                 invoice.store.toLowerCase().includes(searchTerm) ||
                 invoice.item.toLowerCase().includes(searchTerm) ||
-                invoice.invoiceNumber.toLowerCase().includes(searchTerm ||
-              invoice.category.toLowerCase().includes(searchTerm)
+                invoice.invoiceNumber.toLowerCase().includes(searchTerm) ||
+                invoice.category.toLowerCase().includes(searchTerm)
             );
         }
 
