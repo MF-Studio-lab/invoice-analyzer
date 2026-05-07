@@ -74,6 +74,25 @@ class InvoiceAnalyzer {
         // Pagination buttons
         document.getElementById('prevBtn').addEventListener('click', () => this.prevPage());
         document.getElementById('nextBtn').addEventListener('click', () => this.nextPage());
+
+        // Toggle other category breakdown
+        const toggleOtherBtn = document.getElementById('toggleOtherBreakdown');
+        const otherSection = document.getElementById('otherBreakdownSection');
+        const otherList = document.getElementById('otherBreakdownList');
+        const toggleIcon = document.getElementById('toggleOtherIcon');
+        const toggleText = document.getElementById('toggleOtherText');
+        if (toggleOtherBtn) {
+            toggleOtherBtn.addEventListener('click', () => {
+                const isHidden = otherSection.classList.toggle('hidden');
+                if (!isHidden) {
+                    // Populate the list when showing
+                    this.updateOtherBreakdownList();
+                }
+                // Toggle icon
+                toggleIcon.classList.toggle('rotate-180');
+                toggleText.textContent = isHidden ? '顯示其他類別詳細' : '隱藏其他類別詳細';
+            });
+        }
     }
 
     setupDragAndDrop() {
@@ -622,18 +641,35 @@ class InvoiceAnalyzer {
         if (entries.length <= 8) {
             labels = entries.map(e => e[0]);
             data = entries.map(e => e[1]);
+            this.lastOtherDetails = []; // No other details
         } else {
             const top8 = entries.slice(0, 8);
             const rest = entries.slice(8);
             const restSum = rest.reduce((sum, e) => sum + e[1], 0);
             labels = top8.map(e => e[0]).concat(['其他']);
             data = top8.map(e => e[1]).concat([restSum]);
+            // Cache the other details for display
+            this.lastOtherDetails = rest.map(([category, amount]) => ({category, amount}));
         }
 
         return {
             labels: labels,
             data: data
         };
+    }
+    getOtherCategoryDetails() {
+        return this.lastOtherDetails;
+    }
+    updateOtherBreakdownList() {
+        const otherList = document.getElementById('otherBreakdownList');
+        if (!otherList) return;
+        const details = this.getOtherCategoryDetails();
+        if (details.length === 0) {
+            otherList.innerHTML = '<p class="text-gray-400">無其他類別</p>';
+            return;
+        }
+        const items = details.map(d => `<div class="flex items-center justify-between py-1 border-b border-gray-700 last:border-0"><span class="text-gray-300">${d.category}</span><span class="text-right font-mono text-gray-200">NT$${this.formatCurrency(d.amount)}</span></div>`).join('');
+        otherList.innerHTML = items;
     }
 
     updateTable() {
