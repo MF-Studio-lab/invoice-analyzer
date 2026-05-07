@@ -621,36 +621,59 @@ class InvoiceAnalyzer {
         };
     }
 
-    getCategoryData() {
+            getCategoryData() {
         const categoryMap = {};
+        const otherDetails = [];
+
+        // Helper to map store name to category
+        const getCategoryFromStore = (store) => {
+            if (!store) return null;
+            const s = store.trim();
+            // Define keyword -> category mappings
+            const rules = [
+                { keywords: ['加油站', '油品'], category: '加油站' },
+                { keywords: ['全聯', '全家', '7-ELEVEN', '7 十一', 'OK商店', '百貨'], category: '超商' },
+                { keywords: ['藏壽司'], category: '藏壽司' },
+                { keywords: ['星巴克'], category: '星巴克' },
+                { keywords: ['愛買', '大潤發', '家樂福', '郵局'], category: '大賣場' },
+                { keywords: ['康是美', '屈臣氏'], category: '藥妝' },
+                { keywords: ['餐廳', '餐飲', '小吃', '咖啡', '茶坊', '茶店'], category: '餐飲' },
+                { keywords: ['電影院', '影城'], category: '娛樂' },
+                { keywords: ['加油站', '油'], category: '加油站' },
+            ];
+            for (const rule of rules) {
+                for (const kw of rule.keywords) {
+                    if (s.includes(kw)) {
+                        return rule.category;
+                    }
+                }
+            }
+            return null; // will go to 其他
+        };
 
         this.invoices.forEach(inv => {
-            const category = inv.store || '其他';
-
-            if (!categoryMap[category]) {
-                categoryMap[category] = 0;
+            const rawStore = inv.store || '';
+            const category = getCategoryFromStore(rawStore);
+            if (category === null) {
+                // treat as 其他
+                if (!categoryMap['其他']) categoryMap['其他'] = 0;
+                categoryMap['其他'] += inv.amount;
+                otherDetails.push({category: rawStore, amount: inv.amount});
+            } else {
+                if (!categoryMap[category]) categoryMap[category] = 0;
+                categoryMap[category] += inv.amount;
             }
-            categoryMap[category] += inv.amount;
         });
 
-        // 按金額排序
+        // Sort categories by amount descending
         const entries = Object.entries(categoryMap)
             .sort((a, b) => b[1] - a[1]);
 
-        let labels, data;
-        if (entries.length <= 8) {
-            labels = entries.map(e => e[0]);
-            data = entries.map(e => e[1]);
-            this.lastOtherDetails = []; // No other details
-        } else {
-            const top8 = entries.slice(0, 8);
-            const rest = entries.slice(8);
-            const restSum = rest.reduce((sum, e) => sum + e[1], 0);
-            labels = top8.map(e => e[0]).concat(['其他']);
-            data = top8.map(e => e[1]).concat([restSum]);
-            // Cache the other details for display
-            this.lastOtherDetails = rest.map(([category, amount]) => ({category, amount}));
-        }
+        const labels = entries.map(e => e[0]);
+        const data = entries.map(e => e[1]);
+
+        // Cache other details for breakdown
+        this.lastOtherDetails = otherDetails;
 
         return {
             labels: labels,
