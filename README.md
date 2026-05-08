@@ -97,6 +97,27 @@
 - 點擊右上角的「🗑️ 清除資料」按鈕
 - 確認後會清除所有發票資料和 localStorage
 
+### 8. 自訂分類關鍵字
+
+系統根據商店名稱自動將發票歸類至預定義的消費類別。若需修改或添加分類關鍵字，請編輯 `js/app.js` 中的 `_getCategoryFromStore` 方法：
+
+```javascript
+_getCategoryFromStore(store) {
+    if (!store) return null;
+    const s = store.trim();
+    // Define keyword -> category mappings
+    const rules = [
+        { keywords: ['至盛科技','燦坤','富邦媒體','momo'], category: '3C / 科技' },
+        { keywords: ['爭鮮','麥當勞','海景世界','新東陽','五二早餐'], category: '餐飲 / 外食' },
+        // ... 更多規則
+    ];
+    // 修改此處的 keywords 陣列來添加或修改關鍵字
+    // 例如：{ keywords: ['新關鍵字'], category: '新類別' },
+];
+```
+
+修改後重新載入網頁即可套用新的分類規則。
+
 ## CSV 檔案格式
 
 系統支援多種欄位名稱，會自動識別以下欄位：
