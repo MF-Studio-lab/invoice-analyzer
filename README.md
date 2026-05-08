@@ -122,13 +122,13 @@ _getCategoryFromStore(store) {
 
 系統支援多種欄位名稱，會自動識別以下欄位：
 
-|| 功能 | 支援的欄位名稱 ||
-||------|--------------||
-|| 金額 | 發票金額、消費金額、金額、Amount、amount、總金額、Total、消費明細_金額 ||
-|| 日期 | 日期、Date、date、發票日期、InvoiceDate、時間 ||
-|| 品項 | 品項、品名、消費明細_品名、Item、item、商品名稱、Product、Description ||
-|| 商店 | 商店名稱、店名、Store、store、賣方名稱、Seller、商家 ||
-|| 發票號碼 | 發票號碼、InvoiceNumber、invoice、發票號、No ||
+| 功能 | 支援的欄位名稱 |
+|------|----------------|
+| 金額 | 發票金額、消費金額、金額、Amount、amount、總金額、Total、消費明細_金額 |
+| 日期 | 日期、Date、date、發票日期、InvoiceDate、時間 |
+| 品項 | 品項、品名、消費明細_品名、Item、item、商品名稱、Product、Description |
+| 商店 | 商店名稱、店名、Store、store、賣方名稱、Seller、商家 |
+| 發票號碼 | 發票號碼、InvoiceNumber、invoice、發票號、No |
 
 ### 範例 CSV 格式
 
