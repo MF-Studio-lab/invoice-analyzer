@@ -691,11 +691,43 @@ class InvoiceAnalyzer {
         if (!otherList) return;
         const details = this.getOtherCategoryDetails();
         if (details.length === 0) {
-            otherList.innerHTML = '<p class="text-gray-400">無其他類別</p>';
+            otherList.innerHTML = '<p class="text-gray-400 text-center py-3">無其他類別</p>';
             return;
         }
-        const items = details.map(d => `<div class="flex items-center justify-between py-1 border-b border-gray-700 last:border-0"><span class="text-gray-300">${d.category}</span><span class="text-right font-mono text-gray-200">NT$${this.formatCurrency(d.amount)}</span></div>`).join('');
-        otherList.innerHTML = items;
+
+        // 計算其他類別詳細中的總金額
+        const totalOtherAmount = details.reduce((sum, d) => sum + d.amount, 0);
+
+        // 生成表格 HTML
+        const tableHTML = `
+            <table class="w-full text-sm border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-600 bg-gray-700">
+                        <th class="px-3 py-2 text-left text-gray-200 font-semibold">商店名稱</th>
+                        <th class="px-3 py-2 text-right text-gray-200 font-semibold">消費金額</th>
+                        <th class="px-3 py-2 text-right text-gray-200 font-semibold">佔比</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${details.map(d => {
+                        const percentage = totalOtherAmount > 0 ? ((d.amount / totalOtherAmount) * 100).toFixed(1) : '0.0';
+                        return `
+                            <tr class="border-b border-gray-700 hover:bg-gray-800 transition-colors">
+                                <td class="px-3 py-2 text-gray-300">${d.category}</td>
+                                <td class="px-3 py-2 text-right font-mono text-gray-200">NT$${this.formatCurrency(d.amount)}</td>
+                                <td class="px-3 py-2 text-right text-gray-400">${percentage}%</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                    <tr class="border-t border-gray-600 bg-gray-800 font-semibold">
+                        <td class="px-3 py-2 text-gray-200">合計</td>
+                        <td class="px-3 py-2 text-right font-mono text-gray-100">NT$${this.formatCurrency(totalOtherAmount)}</td>
+                        <td class="px-3 py-2 text-right text-gray-300">100.0%</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+        otherList.innerHTML = tableHTML;
     }
 
     updateTable() {
