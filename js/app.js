@@ -714,14 +714,14 @@ class InvoiceAnalyzer {
                         return `
                             <tr class="border-b border-gray-700 hover:bg-gray-800 transition-colors">
                                 <td class="px-3 py-2 text-gray-300">${d.category}</td>
-                                <td class="px-3 py-2 text-right font-mono text-gray-200">NT$${this.formatCurrency(d.amount)}</td>
+                                <td class="px-3 py-2 text-right font-mono text-gray-200">${this.formatCurrency(d.amount)}</td>
                                 <td class="px-3 py-2 text-right text-gray-400">${percentage}%</td>
                             </tr>
                         `;
                     }).join('')}
                     <tr class="border-t border-gray-600 bg-gray-800 font-semibold">
                         <td class="px-3 py-2 text-gray-200">合計</td>
-                        <td class="px-3 py-2 text-right font-mono text-gray-100">NT$${this.formatCurrency(totalOtherAmount)}</td>
+                        <td class="px-3 py-2 text-right font-mono text-gray-100">${this.formatCurrency(totalOtherAmount)}</td>
                         <td class="px-3 py-2 text-right text-gray-300">100.0%</td>
                     </tr>
                 </tbody>
