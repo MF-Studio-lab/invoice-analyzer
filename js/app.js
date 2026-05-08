@@ -730,23 +730,24 @@ class InvoiceAnalyzer {
         otherList.innerHTML = tableHTML;
     }
 
+    // 將 updateTable 函式替換為下面這個版本
     updateTable() {
         const tbody = document.getElementById('invoiceTableBody');
         const noResults = document.getElementById('noResults');
-
+    
         // 計算分頁
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
         const pageData = this.filteredInvoices.slice(startIndex, endIndex);
-
+    
         // 清空現有行
         tbody.innerHTML = '';
-
+    
         if (pageData.length === 0) {
             noResults.classList.remove('hidden');
         } else {
             noResults.classList.add('hidden');
-
+    
             pageData.forEach(invoice => {
                 const row = document.createElement('tr');
                 row.className = 'fade-in';
@@ -754,15 +755,23 @@ class InvoiceAnalyzer {
                     <td class="px-4 py-3 text-sm text-gray-300">${invoice.date}</td>
                     <td class="px-4 py-3 text-sm text-gray-300 font-mono">${invoice.invoiceNumber}</td>
                     <td class="px-4 py-3 text-sm text-gray-300">${invoice.store}</td>
+                    <td class="px-4 py-3 text-sm text-gray-300">${invoice.item}</td>
                     <td class="px-4 py-3 text-sm text-gray-300">${invoice.category}</td>
                     <td class="px-4 py-3 text-sm text-gray-300 text-right font-medium">${this.formatCurrency(invoice.amount)}</td>
                 `;
                 tbody.appendChild(row);
             });
         }
-
+    
         // 更新分頁資訊
         this.updatePagination();
+    
+        // 更新篩選結果累計金額（顯示整個 filteredInvoices 的合計）
+        const totalFiltered = this.filteredInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+        const filteredAmountEl = document.getElementById('filteredTotalAmount');
+        if (filteredAmountEl) {
+            filteredAmountEl.textContent = this.formatCurrency(totalFiltered);
+        }
     }
 
     updatePagination() {
